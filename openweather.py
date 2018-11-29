@@ -207,29 +207,38 @@ def select_city_db(name_city):
 
 
 def update_city_db(**city_info):
+    city_id = city_info['id']
+    city_name = city_info['name']
+    temperature = parse_city_info('main', 'temp', **city_info)
     with sqlite3.connect("openweather_db.db") as conn:
         cur = conn.cursor()
-        city_id = city_info['id']
-        date_now = datetime.date.today()
-        temperature = parse_city_info('main', 'temp', **city_info)
         cur.execute(f"""UPDATE table_info_city SET 
                             city_id={city_id}, 
-                            date_now={date_now}, 
-                            temperature = {temperature}""")
+                            date_now=date(), 
+                            temperature = {temperature}
+                            WHERE city_name='{city_name}'""")
 
 def main():
     city_list = read_json('city.list.json')
     api = get_api()
-    city = input("Введите город транслитом\n").capitalize()
-    city_info = get_json_for_city(api, city, city_list)
-    try:
-        create_db()
-    except sqlite3.OperationalError:
-        pass
-    if select_city_db(city):
-        update_city_db(**city_info)
-    else:
-        insert_info_to_db(**city_info)
+    while True:
+        city = input("Введите город транслитом. Если хотите закрыть программу - введите exit.\n").capitalize()
+        if city != 'Exit':
+            try:
+                city_info = get_json_for_city(api, city, city_list)
+                try:
+                    create_db()
+                except sqlite3.OperationalError:
+                    pass
+                if select_city_db(city):
+                    update_city_db(**city_info)
+                else:
+                    insert_info_to_db(**city_info)
+            except TypeError:
+                print("Неправильный город")
+        else:
+            break
+
 
 if __name__ == "__main__":
     main()
