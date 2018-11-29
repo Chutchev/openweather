@@ -23,12 +23,13 @@
 import csv
 import json
 import sqlite3
+import sys
 
 
-def get_data_from_db():
+def get_data_from_db(city):
     with sqlite3.connect("./openweather_db.db") as conn:
         cur = conn.cursor()
-        data = cur.execute("""SELECT * FROM table_info_city""")
+        data = cur.execute(f"""SELECT * FROM table_info_city where city_name='{city}'""")
         strokes_from_db = data.fetchall()
     return strokes_from_db
 
@@ -40,16 +41,31 @@ def create_dictionary_for_json(strokes_from_db):
     return list_for_json
 
 
-def save_json(list_for_json):
-    json_data = json.dumps(list_for_json, sort_keys=True, indent=4)
-    with open("./openweather_json.json", 'w', encoding='utf-8') as f:
+def save_json(list_for_output, filename):
+    json_data = json.dumps(list_for_output, sort_keys=True, indent=4)
+    with open(f"{filename}.json", 'w', encoding='utf-8') as f:
         f.write(json_data)
 
+def save_csv(list_for_output, filename):
+    for id, name, date, temp, weather_id in list_for_output:
+        with open(f"{filename}.csv", "w", encoding='utf-8') as f:
+            f.write(f"{id},{name},{date},{temp},{weather_id}")
 
+
+#TODO Сделать вывод в html
 def main():
-    strokes_from_db = get_data_from_db()
-    list_for_json = create_dictionary_for_json(strokes_from_db)
-    save_json(list_for_json)
+    city = sys.argv[3]
+    filename = sys.argv[2]
+    output_type = sys.argv[1]
+    strokes_from_db = get_data_from_db(city)
+    if output_type == '--json':
+        list_for_output = create_dictionary_for_json(strokes_from_db)
+        save_json(list_for_output, filename)
+    elif output_type == "--csv":
+        list_for_output = get_data_from_db(city)
+        save_csv(list_for_output, filename)
+    elif output_type == '--html':
+        pass
 
 if __name__ == "__main__":
     main()
